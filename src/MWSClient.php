@@ -1175,18 +1175,23 @@ class MWSClient{
     /**
 	 * Get eligible shipping services
 	 *
-	 * @param array $shipmentRequestDetails
+     * @param array $requestParams Request as an associative array ['key' => ['subkey' => 'value']] or in MWS paramter format ['key.subkey' => 'value']
+     * @param bool $mwsEncodeParams
 	 *
 	 * @return array
 	 * @throws Exception
 	 */
-    public function GetEligibleShippingServices($shipmentRequestDetails = []) 
+    public function GetEligibleShippingServices(Array $requestParams, $mwsEncodeParams = false) 
     {
 	    $query = [
 		    'MarketplaceId' => $this->config['Marketplace_Id']
 	    ];
 	
-	    $query += $shipmentRequestDetails;
+        if($mwsEncode) {
+            $requestParams = $this->mwsParmeterEncode($requestParams);
+        }
+    
+        $query += $requestParams;
 	
 	    $response = $this->request(
 		    'GetEligibleShippingServices',
@@ -1194,39 +1199,153 @@ class MWSClient{
 	    );
 	
 	    $result = [];
-	    if (isset($response['GetEligibleShippingServicesResult']['ShippingServiceList'])) {
-		    return $response['GetEligibleShippingServicesResult']['ShippingServiceList'];
+	    if (!isset($response['GetEligibleShippingServicesResult']['ShippingServiceList'])) {
+            return [];
 	    }
 	    
-	    return $result;
+	    return $response['GetEligibleShippingServicesResult']['ShippingServiceList'];
     }
 
     /**
-	 * create shipment
-	 *
-	 * @param array $shipmentRequestDetails
-	 *
-	 * @return array
-	 * @throws Exception
-	 */
-    public function CreateShipment($shipmentRequestDetails = [])
-    {    
-	    $query = [
-		    'MarketplaceId' => $this->config['Marketplace_Id']
-	    ];
-	
-	    $query += $shipmentRequestDetails;
-	
-	    $response = $this->request(
-		    'CreateShipment',
-		    $query
-	    );
-	
-	    if (isset($response['CreateShipmentResult']['Shipment'])) {
-		    return $response['CreateShipmentResult']['Shipment'];
-	    }
-	    
-	    return [];
+     * create shipment
+     *
+     * @param array $requestParams
+     * @param bool $mwsEncode
+     *
+     * @return array
+     * @throws Exception
+     */
+    public function CreateShipment(Array $requestParams, $mwsEncodeParams = false) {
+        $query = [
+            'MarketplaceId' => $this->config['Marketplace_Id']
+        ];
+    
+        if($mwsEncode) {
+            $requestParams = $this->mwsParmeterEncode($requestParams);
+        }
+    
+        $query += $requestParams;
+    
+        $response = $this->request(
+            'CreateShipment',
+            $query
+        );
+    
+        if (!isset($response['CreateShipmentResult']['Shipment'])) {
+            return [];
+        }
+        
+        return $response['CreateShipmentResult']['Shipment'];
+    }
+
+    /**
+     * get shipment
+     *
+     * @param string shipmentID
+     *
+     * @return array
+     * @throws Exception
+     */
+    public function GetShipment($shipmentID) {
+        $query = [
+            'MarketplaceId' => $this->config['Marketplace_Id'],
+            'ShipmentId' => $shipmentID,
+        ];
+    
+        $response = $this->request(
+            'GetShipment',
+            $query
+        );
+    
+        if (!isset($response['GetShipmentResult']['Shipment'])) {
+            return [];
+        }
+        
+        return $response['GetShipmentResult']['Shipment'];
+    }
+
+    /**
+     * cancel shipment
+     *
+     * @param string shipmentID
+     *
+     * @return array
+     * @throws Exception
+     */
+    public function CancelShipment($shipmentID) {    
+        $query = [
+            'MarketplaceId' => $this->config['Marketplace_Id'],
+            'ShipmentId' => $shipmentID,
+        ];
+    
+        $response = $this->request(
+            'CancelShipment',
+            $query
+        );
+    
+        if (!isset($response['CancelShipmentResult']['Shipment'])) {
+            return [];
+        }
+
+        return $response['CancelShipmentResult']['Shipment'];
+    }
+
+    /**
+    * Encode am array of nested query parameter values and lists into Amazon MWS's query parameter notation.
+    *   
+    * Why they don't just use JSON is beyond me. This function also has a simple feature for detecting and avoid circular references.
+    * @param Array &$array nested array of query values and lists. Passed by reference required for circular reference
+    * @return Array
+    */
+    public function mwsParmeterEncode(Array &$array) {
+        $output = [];
+
+        // Used to detect circular references.
+        // Marking current array. If any recursive calls encounter this key, return empty array
+        if(isset($array['this_looks_familiar'])) {
+            return [];
+        }
+        
+        $array['this_looks_familiar'] = true;
+
+
+        // Amazon MWS parameter list indexs can not be zero.
+        // If zero is detected, all integer indexes will be incremented up by 1 in the output
+        $shiftIntKeys = false;
+        if(isset($array[0])) {
+            $shiftIntKeys = true;
+        }
+
+        foreach($array as $key => &$value) {
+        
+            // Skipping this key to avoid including this key in output
+            if($key === 'this_looks_familiar') {
+                continue;
+            }
+
+            if(is_int($key) && $shiftIntKeys) {
+                $outputKey = $key + 1;
+            } else {
+                $outputKey = $key;
+            }
+
+            if(is_array($value)) {
+                foreach($this->{__FUNCTION__}($value) as $_k => $_v) {
+                    $output[$outputKey . '.' . $_k] = $_v;
+                }
+            } elseif(is_bool($value)) {
+                $output[$outputKey] = $value ? 'true' : 'false';
+            } else {
+                $output[$outputKey] = (string) $value;
+            }
+
+            unset($value, $key);
+        }
+
+        // Remove the circular reference checking key
+        unset($array['this_looks_familiar']);
+
+        return $output;
     }
 
     /**

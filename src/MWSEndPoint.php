@@ -157,7 +157,19 @@ class MWSEndPoint{
             'action' => 'CreateShipment',
             'path' => '/MerchantFulfillment/2015-06-01',
             'date' => '2015-06-01'
-        ]
+        ],
+        'GetShipment' => [
+            'method' => 'POST',
+            'action' => 'GetShipment',
+            'path' => '/MerchantFulfillment/2015-06-01',
+            'date' => '2015-06-01'
+        ],
+        'CancelShipment' => [
+            'method' => 'POST',
+            'action' => 'CancelShipment',
+            'path' => '/MerchantFulfillment/2015-06-01',
+            'date' => '2015-06-01'
+        ],
     ];
 
     public static function get($key)
