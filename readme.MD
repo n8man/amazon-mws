@@ -193,3 +193,63 @@ $client->updateStock($array);
 // A method to quickly check if the supplied credentials are valid
 $client->validateCredentials();
 ```
+
+### Get Eligible Shipping Services
+```php
+
+$shipmentDetails = [
+    'AmazonOrderId' => '123-1234567-1234567',
+    'ItemList.Item' => [ // Lists are written as ListName.ListType and use 0-based indexes
+        [
+            'OrderItemId' => '01234567891234',
+            'Quantity' => 1,
+        ],
+    ],
+    'ShipFromAddress' => [
+        'Name' => 'ABC Company',
+        'AddressLine1' => '123 Street Address Ln',
+        'AddressLine2' => 'Suite 123',
+        'AddressLine3' => '3rd Floor',
+        'Email' => 'byte@me.com',
+        'City' => 'New York',
+        'StateOrProvinceCode' => 'NY',
+        'PostalCode' => '10014',
+        'CountryCode' => 'US',
+        'Phone' => '123-123-1234',
+    ],
+    'PackageDimensions' => [
+        'Length' => 10,
+        'Width' => 8,
+        'Height' => 5,
+        'Unit' => 'inches',
+        //'PredefinedPackageDimensions' => '',
+    ],
+    'ShippingServiceOptions' => [
+        'DeliveryExperience' => 'DeliveryConfirmationWithoutSignature', // Do not use 'NoTracking'
+        //'DeliveryExperience' => 'DeliveryConfirmationWithoutSignature',
+        //'DeclaredValue' => '0',
+        'CarrierWillPickUp' => false,
+        'LabelFormat' => 'PNG',
+    ],
+    'Weight' => [
+        'Value' => 5 * 16, // 5lb in ounces
+        'Unit' => 'oz'
+    ],
+    'ShipDate' => date('Y-m-d'),
+    'LabelCustomization' => [
+        //'CustomTextForLabel' => 'Custom Text',
+        'StandardIdForLabel' => 'AmazonOrderId',
+    ],
+];
+
+$response = $client->GetEligibleShippingServices($shipmentDetails);
+var_dump($response);
+
+$serviceIDs = [];
+foreach($response['ShippingService'] as $service) {
+    $serviceIDs[] = $service['ShippingServiceId'];
+}
+
+var_dump($serviceIDs);
+
+```

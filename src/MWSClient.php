@@ -1175,23 +1175,19 @@ class MWSClient{
     /**
 	 * Get eligible shipping services
 	 *
-     * @param array $requestParams Request as an associative array ['key' => ['subkey' => 'value']] or in MWS paramter format ['key.subkey' => 'value']
-     * @param bool $mwsEncodeParams
+     * @param array $shipmentRequestDetails Request as an associative array ['key' => ['subkey' => 'value']]
 	 *
 	 * @return array
 	 * @throws Exception
 	 */
-    public function GetEligibleShippingServices(Array $requestParams, $mwsEncodeParams = false) 
-    {
-	    $query = [
-		    'MarketplaceId' => $this->config['Marketplace_Id']
-	    ];
-	
-        if($mwsEncode) {
-            $requestParams = $this->mwsParmeterEncode($requestParams);
-        }
-    
-        $query += $requestParams;
+    public function GetEligibleShippingServices(Array $shipmentRequestDetails) {
+
+        $_request = [
+            'MarketplaceId' => $this->config['Marketplace_Id'],
+            'ShipmentRequestDetails' => $shipmentRequestDetails,
+        ];
+
+        $query = $this->mwsParmeterEncode($_request);
 	
 	    $response = $this->request(
 		    'GetEligibleShippingServices',
@@ -1209,22 +1205,21 @@ class MWSClient{
     /**
      * create shipment
      *
-     * @param array $requestParams
-     * @param bool $mwsEncode
+     * @param array $shipmentRequestDetails as associative array
+     * @param string $serviceID
      *
      * @return array
      * @throws Exception
      */
-    public function CreateShipment(Array $requestParams, $mwsEncodeParams = false) {
-        $query = [
-            'MarketplaceId' => $this->config['Marketplace_Id']
+    public function CreateShipment(Array $shipmentRequestDetails, $serviceID) {
+
+        $_request = [
+            'MarketplaceId' => $this->config['Marketplace_Id'],
+            'ShipmentRequestDetails' => $shipmentRequestDetails,
+            'ShippingServiceId' => $serviceID,
         ];
-    
-        if($mwsEncode) {
-            $requestParams = $this->mwsParmeterEncode($requestParams);
-        }
-    
-        $query += $requestParams;
+
+        $query = $this->mwsParmeterEncode($_request);
     
         $response = $this->request(
             'CreateShipment',
@@ -1293,7 +1288,7 @@ class MWSClient{
     /**
     * Encode am array of nested query parameter values and lists into Amazon MWS's query parameter notation.
     *   
-    * Why they don't just use JSON is beyond me. This function also has a simple feature for detecting and avoid circular references.
+    * Why they don't just use JSON is beyond me. This function also has a simple feature for detecting and avoiding circular references.
     * @param Array &$array nested array of query values and lists. Passed by reference required for circular reference
     * @return Array
     */
